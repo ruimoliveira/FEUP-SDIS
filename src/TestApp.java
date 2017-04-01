@@ -41,7 +41,7 @@ public class TestApp {
 				stub.backup(args[2], Integer.parseInt(args[3]));
 				break;
 			case "RESTORE":
-				stub.restore();
+				stub.restore(args[2]);
 				break;
 			case "DELETE":
 				stub.delete();

@@ -65,11 +65,10 @@ public class ChannelThread extends Thread {
 		 * 4. manda mensagem STORED para mcSocket
 		 * */
 		
-		
 		/*TODO: verificar se ja tem ficheiro*/
 		boolean hasFile = false;
 		if (!hasFile) {
-			/*TODO: guardar ficheiro*/
+			/*TODO: guardar chunk*/
 		}
 		
 		/*waiting some random time before sending response*/

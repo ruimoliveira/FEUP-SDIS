@@ -78,10 +78,10 @@ public class Peer implements RMIservice {
 
 	// file_path, rep
 	public void backup(String file_path, int rep_degree) {
-		System.out.println("Request for file backup.");
+		System.out.println("Request for file backup received.");
 
 		File f = new File(file_path);
-		if (!f.exists()) {
+		if (!f.exists() && !f.isDirectory()) {
 			System.out.println("File doesn't exist.");
 			// f.mkdir();
 			// System.out.println(f.getPath());
@@ -113,9 +113,17 @@ public class Peer implements RMIservice {
 		// create
 	}
 
-	public void restore() {
-		System.out.println("recebi pedido de restore");
-		/* TODO: Restore.java */
+	public void restore(String file_path) {
+		System.out.println("Request for file restore received.");
+		
+		File f = new File(file_path);
+		if (!f.exists() && !f.isDirectory()) {
+			System.out.println("File doesn't exist.");
+			// f.mkdir();
+			// System.out.println(f.getPath());
+		} else {
+			/* TODO: Restore.java */
+		}
 	}
 
 	public void delete() {

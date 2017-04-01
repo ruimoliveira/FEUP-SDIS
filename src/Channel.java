@@ -55,7 +55,7 @@ public class Channel {
 						break;
 					case "PUTCHUNK":
 						System.out.println("CHANNEL: Received CHUNK message");
-						/*TODO: find if REMOVED there is a thread that needs interruption & interrupt it*/
+						/*TODO: find if there is a REMOVED thread that needs interruption & interrupt it*/
 						new ChannelThread(buf).start();
 						break;
 					case "CHUNK":

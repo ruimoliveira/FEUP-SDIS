@@ -99,6 +99,8 @@ public interface Utils {
 		System.out.println("Message received: " + msgReceived);
 		String[] components = msgReceived.split(" ");
 		
+		/*TODO: decide on how to decode data*/
+		
 		return components;
 	}
 	
