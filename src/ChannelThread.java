@@ -29,7 +29,7 @@ public class ChannelThread extends Thread {
 			this.replicationDeg = Integer.parseInt(received[5]);
 		}
 		
-		/*TODO: get file from buffer either here or in Utils.java*/
+		/*TODO: get chunk from buffer either here or in Utils.java*/
 
 		/*
 		PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo> <ReplicationDeg> <CRLF><CRLF><Body>
@@ -68,8 +68,9 @@ public class ChannelThread extends Thread {
 		/*TODO: verificar se ja tem ficheiro*/
 		boolean hasFile = false;
 		if (!hasFile) {
-			/*TODO: guardar chunk*/
+			/*TODO: guardar chunk se tiver espaco para isso*/
 		}
+		
 		
 		/*waiting some random time before sending response*/
 		Random rng = new Random();
@@ -104,7 +105,7 @@ public class ChannelThread extends Thread {
 	
 	public void delete(){
 		/*TODO received delete thread
-		 * 1. apagar o ficheiro
+		 * 1. apagar todos os chunks com fileID especificado
 		 * */
 		
 	}
