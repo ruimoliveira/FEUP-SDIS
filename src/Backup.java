@@ -17,7 +17,7 @@ public class Backup extends Thread implements Utils{
 		for (int i = 0; i < 5; i++) {
 
 			/* SEND START */
-			byte[] msg = Utils.codeMessage("PUTCHUNK", chunk.getFileID(), chunk);
+			byte[] msg = Utils.codeMessage("PUTCHUNK", chunk.getFileID(), chunk.getChunkNo(), chunk);
 
 			/*String msg = "PUTCHUNK " + Peer.protocolV+" "+Peer.peerID+" "+ chunk.getFileID() + " "+ chunk.getChunkNo() + " " + chunk.getReplication()+ " "+CRLF+CRLF+ new String(chunk.getData());
 			System.out.println(msg);

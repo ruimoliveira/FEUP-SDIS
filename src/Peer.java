@@ -14,6 +14,7 @@ public class Peer implements RMIservice {
 	public static InetAddress mcAddress, mdbAddress, mdrAddress;
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
+	public static int maxKByte = 0;
 
 	public static void main(String[] args) throws IOException {
 
@@ -21,6 +22,15 @@ public class Peer implements RMIservice {
 		if (args.length != 9) {
 			System.out.println(
 					"java Peer <protocol_version> <peer_id> <service_access_point> <mcAddress> <mcPort> <mdbAddress> <mdbPort> <mdrAddress> <mdrPort>");
+			/*
+			System.out.println("where:");
+			System.out.println("	<protocol_version> 0|1 for with/without improvements respectively");
+			System.out.println("	<peer_id> this peer's ID");
+			System.out.println("	<service_access_point> TODO: complete usage");
+			System.out.println("	<mcAddress> <mcPort> Address and Port for Multicast command messages");
+			System.out.println("	<mdbAddress> <mdbPort> Address and Port for Multicast data backup messages");
+			System.out.println("	<mdrAddress> <mdrPort> Address and Port for Multicast data restore messages");
+			*/
 			return;
 		}
 

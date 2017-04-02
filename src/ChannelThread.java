@@ -8,7 +8,7 @@ public class ChannelThread extends Thread {
 	protected boolean running;
 	protected String messageType, version, senderID, fileID;
 	protected int chunkNo, replicationDeg;
-	protected byte[] buffer;
+	protected byte[] buffer, chunkData;
 	
 	public ChannelThread(byte[] buffer) throws IOException {
 		this.running = true;
@@ -29,7 +29,13 @@ public class ChannelThread extends Thread {
 			this.replicationDeg = Integer.parseInt(received[5]);
 		}
 		
-		/*TODO: get chunk from buffer either here or in Utils.java*/
+		if(messageType.equals("PUTCHUNK") || messageType.equals("CHUNK")){
+			String body = "";
+			for(int i = 6; i<received.length; i++){
+				body = body + received[i];
+			}
+			this.chunkData = Utils.stringToByte(body);
+		}
 
 		/*
 		PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo> <ReplicationDeg> <CRLF><CRLF><Body>
@@ -65,12 +71,22 @@ public class ChannelThread extends Thread {
 		 * 4. manda mensagem STORED para mcSocket
 		 * */
 		
-		/*TODO: verificar se ja tem ficheiro*/
-		boolean hasFile = false;
-		if (!hasFile) {
-			/*TODO: guardar chunk se tiver espaco para isso*/
-		}
-		
+		String filepath = "/database/" + fileID + "/" + this.chunkNo;
+		File f = new File(filepath);
+		if (!f.exists() && !f.isDirectory()) {
+			System.out.println("Chunk doesn't exist. Saving file...");
+			//f.mkdirs();
+			/*TODO: verificar se tem espaco para guardar*/
+			FileOutputStream chunk;
+			try {
+				chunk = new FileOutputStream(f);
+				chunk.write(this.chunkData);
+				chunk.close();
+			} catch (IOException e) {
+				System.out.println("CHANNELTHREAD: Error saving to file.");
+				e.printStackTrace();
+			}
+		} else System.out.println("Chunk already stored.");
 		
 		/*waiting some random time before sending response*/
 		Random rng = new Random();
@@ -83,7 +99,7 @@ public class ChannelThread extends Thread {
 		
 		/* send STORED message to mcSocket
 		 * STORED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF> */
-		byte[] msg = Utils.codeMessage("STORED", fileID, null);
+		byte[] msg = Utils.codeMessage("STORED", this.fileID, this.chunkNo, null);
      	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mdbSocket.getLocalAddress(), Peer.mdbSocket.getLocalPort());
 		try {
 			Peer.mcSocket.send(packet);
