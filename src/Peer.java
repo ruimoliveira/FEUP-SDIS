@@ -15,6 +15,9 @@ public class Peer implements RMIservice {
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
 	public static int maxBytes = 0;
+	
+	/* TODO: decidir como/se se guarda listagem de chunks ou ficheiros ou wtv */
+	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();
 
 	public static void main(String[] args) throws IOException {
 
@@ -55,18 +58,18 @@ public class Peer implements RMIservice {
 			Registry registry = LocateRegistry.getRegistry();
 			registry.bind(serviceAP, stub);
 
-			System.err.println("Server ready");
+			System.err.println("PEER: Server ready");
 		} catch (Exception e) {
-			System.err.println("Server exception: " + e.toString());
+			System.err.println("PEER: Server exception: " + e.toString());
 			e.printStackTrace();
 		}
 
 		/* creates folder to save chunks if it doesn't exist already */
 		File f = new File("database");
-		if (!f.exists()) {
-			System.out.println("Creating ");
+		if (!f.exists() || !f.isDirectory()) {
+			System.out.println("PEER: Creating directory for file storage...");
 			f.mkdir();
-			System.out.println(f.getPath());
+			System.out.println("PEER: path is " + f.getPath());
 		}
 
 		mcSocket = new MulticastSocket(mcPort);
@@ -83,39 +86,36 @@ public class Peer implements RMIservice {
 		new Channel(mdrSocket);
 	}
 
-	/* TODO: decidir como se guarda listagem de chunks ou ficheiros ou wtv */
-	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();
-
 	// file_path, rep
 	public void backup(String file_path, int rep_degree) {
-		System.out.println("Request for file backup received.");
+		System.out.println("PEER: Request for file backup received.");
 
 		File f = new File(file_path);
-		if (!f.exists() && !f.isDirectory()) {
-			System.out.println("File doesn't exist.");
+		if (!f.exists()) {
+			System.out.println("PEER: File doesn't exist.");
 			// f.mkdir();
 			// System.out.println(f.getPath());
 		} else {
-			System.out.println("File exist.");
+			System.out.println("PEER: File loaded.");
 			try {
 
 				byte[] file_bytes = Files.readAllBytes(f.toPath());
-				System.out.println(file_bytes.length);
+				System.out.println("PEER: file size is " + file_bytes.length + " byte");
 
 				String fileID = MyFile.makeFileID(f);
-
-				System.out.println("SHA256: " + fileID);
+				System.out.println("PEER: SHA256 code is " + fileID);
+				
 				MyFile myfile = new MyFile(fileID, peerID, rep_degree, file_bytes.length, file_bytes);
-				System.out.println("Num of chunks: " + myfile.chunks.size());
+				System.out.println("PEER: Num of chunks is " + myfile.chunks.size());
 				int total = 0;
 				for (int i = 0; i < myfile.chunks.size(); i++) {
 					total = total + myfile.chunks.get(i).getSize();
 					new Backup(myfile.chunks.get(i), mdbSocket).start();
 				}
-				System.out.println("Size Total Chunks: " + total);
+				System.out.println("PEER: Size Total Chunks is " + total);
 
 			} catch (IOException e) {
-				System.err.println("Server exception: " + e.toString());
+				System.err.println("Peer exception: " + e.toString());
 				e.printStackTrace();
 			}
 		}
@@ -124,15 +124,17 @@ public class Peer implements RMIservice {
 	}
 
 	public void restore(String file_path) {
-		System.out.println("Request for file restore received.");
+		System.out.println("PEER: Request for file restore received.");
 		
 		File f = new File(file_path);
-		if (!f.exists() && !f.isDirectory()) {
-			System.out.println("File doesn't exist.");
-			// f.mkdir();
-			// System.out.println(f.getPath());
+		if (!f.exists()) {
+			System.out.println("PEER: File to receive data not created.");
+			return;
 		} else {
-			/* TODO: Restore.java */
+			String fileID = MyFile.makeFileID(f);
+			System.out.println("PEER: SHA256 code is " + fileID);
+			
+			new Restore(f, fileID).start();
 		}
 	}
 

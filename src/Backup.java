@@ -3,7 +3,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.lang.Thread;
 
-public class Backup extends Thread implements Utils{
+public class Backup extends Thread {
 	Chunk chunk;
 	MulticastSocket mdb;
 	ArrayList<String> guardians = new ArrayList<String>();
@@ -32,8 +32,10 @@ public class Backup extends Thread implements Utils{
 			try {
 				Peer.mdbSocket.send(packet);
 			} catch (IOException e) {
-				System.out.println("Could not advertise Server");
+				System.out.println("BACKUP: Could not send PUTCHUNK message");
+				e.printStackTrace();
 			}
+			System.out.println("BACKUP: Sent PUTCHUNK message");
 			/* SEND FINNISH */
 
 			
@@ -46,6 +48,7 @@ public class Backup extends Thread implements Utils{
 				try {
 					Peer.mdbSocket.receive(rPacket);
 				} catch (IOException e) {
+					System.out.println("BACKUP: Could not receive STORED response");
 					e.printStackTrace();
 				}
 				
@@ -55,6 +58,7 @@ public class Backup extends Thread implements Utils{
 				/* if msg is relevant then saves the peerID of the sender who stored the chunk> */
 				if (msgReceived[0].equals("STORED") && msgReceived[1].equals(Peer.protocolV) && !isGuardian(msgReceived[2])
 						&& msgReceived[3].equals(chunk.getFileID()) && Integer.parseInt(msgReceived[4]) == chunk.getChunkNo()) {
+					System.out.println("BACKUP: Received STORED response");
 					guardians.add(msgReceived[2]);
 				}
 			} while ((System.currentTimeMillis() - startTime) < ((2 ^ i) * 1000));

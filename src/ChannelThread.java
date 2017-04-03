@@ -29,12 +29,10 @@ public class ChannelThread extends Thread {
 			this.replicationDeg = Integer.parseInt(received[5]);
 		}
 		
-		if(messageType.equals("PUTCHUNK") || messageType.equals("CHUNK")){
-			String body = "";
-			for(int i = 6; i<received.length; i++){
-				body = body + received[i];
-			}
-			this.chunkData = Utils.stringToByte(body);
+		if(messageType.equals("CHUNK")){
+			this.chunkData = Utils.stringToByte(received[6]);
+		} else if (messageType.equals("PUTCHUNK")) {
+			this.chunkData = Utils.stringToByte(received[5]);
 		}
 
 		/*
@@ -69,7 +67,7 @@ public class ChannelThread extends Thread {
 		/* Checks if file exists already */
 		String filepath = "/database/" + fileID + "/" + this.chunkNo;
 		File file = new File(filepath);
-		if (!file.exists() && !file.isDirectory()) {
+		if (!file.exists()) {
 			System.out.println("Chunk doesn't exist. Saving file...");
 			//f.mkdirs();
 			

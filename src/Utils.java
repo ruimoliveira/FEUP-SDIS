@@ -38,15 +38,13 @@ public interface Utils {
 			ByteBuffer bb = null;
 			if (msg_type.equals("PUTCHUNK")) {
 				/*
-				 * PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo>
-				 * <ReplicationDeg> <CRLF><CRLF><Body>
+				 * PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo> <ReplicationDeg> <CRLF><CRLF><Body>
 				 */
 				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
 						+ chunk_no_b.length + replication_b.length + crlf_b.length + crlf_b.length + chunk.getSize());
 			} else if (msg_type.equals("CHUNK")) {
 				/*
-				 * CHUNK <Version> <SenderId> <FileId> <ChunkNo>
-				 * <CRLF><CRLF><Body>
+				 * CHUNK <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF><Body>
 				 */
 				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
 						+ chunk_no_b.length + crlf_b.length + crlf_b.length + chunk.getSize());
@@ -104,6 +102,21 @@ public interface Utils {
 		msgReceived = msgReceived.trim();
 		System.out.println("Message received: " + msgReceived);
 		String[] components = msgReceived.split(" ");
+		
+		/*para o caso de haver um ou mais " "s no meio dos dados*/
+		if(components[0].equals("PUTCHUNK") && components.length > 7){
+			String temp = components[6];
+			for(int i=7; i<components.length; i++){
+				temp = temp + components[i];
+			}
+			components[6] = temp;
+		} else if(components[0].equals("CHUNK") && components.length > 6){
+			String temp = components[5];
+			for(int i=6; i<components.length; i++){
+				temp = temp + components[i];
+			}
+			components[5] = temp;
+		}
 
 		return components;
 	}

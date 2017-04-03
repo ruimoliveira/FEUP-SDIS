@@ -81,7 +81,7 @@ public class Channel {
 							}
 						}
 						
-						/*TODO: precisamos de interromper os CHUNK threads tambem?*/
+						/*TODO: tambem precisamos de interromper os CHUNK threads*/
 						
 						/*start CHUNK thread*/
 						new ChannelThread(buf).start();
