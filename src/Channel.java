@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class Channel {
 
-	protected static ArrayList<ChannelThread> interruptableThreads = new ArrayList<ChannelThread>();
+	protected ArrayList<ChannelThread> interruptableThreads = new ArrayList<ChannelThread>();
 
 	public Channel(MulticastSocket socket) {
 		while(true){
@@ -31,40 +31,60 @@ public class Channel {
 			}
 			
 			/*decode message*/
-			String messageType = Utils.decodeMessage(buf)[0];
+			String[] message = Utils.decodeMessage(buf);
 			
 			/*handle message*/
-			if(messageType != null){
+			if(message != null){
 				try {
-					switch(messageType){
+					ChannelThread thread;
+					switch(message[0]){
 					case "DELETE":
 						System.out.println("CHANNEL: Received DELETE message");
 						new ChannelThread(buf).start();
 						break;
 					case "GETCHUNK":
 						System.out.println("CHANNEL: Received GETCHUNK message");
-						ChannelThread thread =  new ChannelThread(buf);
+						thread =  new ChannelThread(buf);
 						interruptableThreads.add(thread);
 						thread.start();
 						break;
 					case "REMOVED":
 						System.out.println("CHANNEL: Received REMOVED message");
-						ChannelThread thread2 =  new ChannelThread(buf);
-						interruptableThreads.add(thread2);
-						thread2.start();
+						thread =  new ChannelThread(buf);
+						interruptableThreads.add(thread);
+						thread.start();
 						break;
 					case "PUTCHUNK":
 						System.out.println("CHANNEL: Received CHUNK message");
-						/*TODO: find if there is a REMOVED thread that needs interruption & interrupt it*/
+
+						/*find if there is a REMOVED thread that needs interruption & interrupt it*/
+						for (int i=0; i<this.interruptableThreads.size(); i++){
+							if(this.interruptableThreads.get(i).isRelated("REMOVED", message[2], message[3])){
+								this.interruptableThreads.get(i).stopThread();
+								this.interruptableThreads.remove(i);
+								break;
+							}
+						}
+						
+						/*start PUTCHUNK thread*/
 						new ChannelThread(buf).start();
 						break;
 					case "CHUNK":
 						System.out.println("CHANNEL: Received CHUNK message");
-						/*TODO: handle chunk
-						 * 1. check if there is a thread that should be interrupted
-						 * 2. if so, interrupt & ignore
-						 * 3. else, execute a thread
-						 * */
+
+						/*find if there is a GETCHUNK thread that needs interruption & interrupt it*/
+						for (int i=0; i<this.interruptableThreads.size(); i++){
+							if(this.interruptableThreads.get(i).isRelated("GETCHUNK", message[2], message[3])){
+								this.interruptableThreads.get(i).stopThread();
+								this.interruptableThreads.remove(i);
+								break;
+							}
+						}
+						
+						/*TODO: precisamos de interromper os CHUNK threads tambem?*/
+						
+						/*start CHUNK thread*/
+						new ChannelThread(buf).start();
 						break;
 					default:
 						System.out.println("CHANNEL: Unrecognized message received safdasfa");

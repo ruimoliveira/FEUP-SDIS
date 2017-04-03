@@ -94,6 +94,7 @@ public class ChannelThread extends Thread {
 		try {
 			TimeUnit.MILLISECONDS.sleep(r);
 		} catch (InterruptedException e) {
+			/*PUTCHUNK thread interrupted*/
 			e.printStackTrace();
 		}
 		
@@ -138,9 +139,17 @@ public class ChannelThread extends Thread {
 		
 	}
 
+	public void stopThread() {
+		running = false;
+		interrupt();
+	}
 
-   public void stopThread() {
-       running = false;
-       interrupt();
-   }
+	public boolean isRelated(String messageType, String fileID, String chunkNoString) {
+
+		int chunkNo = Integer.parseInt(chunkNoString);
+		if (running && this.messageType.equals(messageType) && this.fileID.equals(fileID) && this.chunkNo == chunkNo)
+			return true;
+		else
+			return false;
+	}
 }
