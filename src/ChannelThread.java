@@ -65,30 +65,33 @@ public class ChannelThread extends Thread {
 	}
 	
 	public void putchunk(){
-		/* 1. verificar se ja tem ficheiro - comparar fileID e chunkNo
-		 * 2. se tem armazena, se nao, continua
-		 * 3. espera um tempo aleatorio entre 0 e 400 ms
-		 * 4. manda mensagem STORED para mcSocket
-		 * */
 		
+		/* Checks if file exists already */
 		String filepath = "/database/" + fileID + "/" + this.chunkNo;
-		File f = new File(filepath);
-		if (!f.exists() && !f.isDirectory()) {
+		File file = new File(filepath);
+		if (!file.exists() && !file.isDirectory()) {
 			System.out.println("Chunk doesn't exist. Saving file...");
 			//f.mkdirs();
-			/*TODO: verificar se tem espaco para guardar*/
-			FileOutputStream chunk;
-			try {
-				chunk = new FileOutputStream(f);
-				chunk.write(this.chunkData);
-				chunk.close();
-			} catch (IOException e) {
-				System.out.println("CHANNELTHREAD: Error saving to file.");
-				e.printStackTrace();
+			
+			/* Check if has enough space */
+			File folder = new File("/database");
+			if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
+				System.out.println("Can not save chunk. Not enough space.");
+			} else {
+				FileOutputStream chunk;
+				try {
+					/* Stores file */
+					chunk = new FileOutputStream(file);
+					chunk.write(this.chunkData);
+					chunk.close();
+				} catch (IOException e) {
+					System.out.println("CHANNELTHREAD: Error saving to file.");
+					e.printStackTrace();
+				}
 			}
 		} else System.out.println("Chunk already stored.");
 		
-		/*waiting some random time before sending response*/
+		/* Waiting for an interruption for a random amount of time before sending response */
 		Random rng = new Random();
 		int r = rng.nextInt(401);
 		try {
@@ -98,7 +101,7 @@ public class ChannelThread extends Thread {
 			e.printStackTrace();
 		}
 		
-		/* send STORED message to mcSocket
+		/* Send STORED message to mcSocket
 		 * STORED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF> */
 		byte[] msg = Utils.codeMessage("STORED", this.fileID, this.chunkNo, null);
      	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mdbSocket.getLocalAddress(), Peer.mdbSocket.getLocalPort());

@@ -14,7 +14,7 @@ public class Peer implements RMIservice {
 	public static InetAddress mcAddress, mdbAddress, mdrAddress;
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
-	public static int maxKByte = 0;
+	public static int maxBytes = 0;
 
 	public static void main(String[] args) throws IOException {
 
@@ -83,7 +83,7 @@ public class Peer implements RMIservice {
 		new Channel(mdrSocket);
 	}
 
-	/* TODO: isto serve para alguma coisa?? */
+	/* TODO: decidir como se guarda listagem de chunks ou ficheiros ou wtv */
 	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();
 
 	// file_path, rep
