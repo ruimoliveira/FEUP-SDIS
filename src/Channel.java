@@ -23,10 +23,12 @@ public class Channel {
 			/*receive message*/
 			byte[] buf = new byte[64256];
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
-			socket.setSoTimeout(1500);
 			
 			try {
+				socket.setSoTimeout(1500);
 				socket.receive(packet);
+			} catch (SocketTimeoutException ste) {
+				/* Do nothing pls */
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
