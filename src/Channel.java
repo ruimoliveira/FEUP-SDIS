@@ -23,6 +23,7 @@ public class Channel {
 			/*receive message*/
 			byte[] buf = new byte[64256];
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
+			socket.setSoTimeout(1500);
 			
 			try {
 				socket.receive(packet);
