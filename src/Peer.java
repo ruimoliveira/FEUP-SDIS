@@ -81,9 +81,12 @@ public class Peer implements RMIservice {
 		mdrSocket.joinGroup(mdrAddress);
 
 		/* init channels */
-		new Channel(mcSocket);
-		new Channel(mdbSocket);
-		new Channel(mdrSocket);
+		System.out.println("PEER: MC channel start");
+		new Channel(mcSocket).start();
+		System.out.println("PEER: MDB channel start");
+		new Channel(mdbSocket).start();
+		System.out.println("PEER: MDR channel start");
+		new Channel(mdrSocket).start();
 	}
 
 	// file_path, rep

@@ -81,9 +81,9 @@ public interface Utils {
 
 			msg = bb.array();
 
-			System.out.println("Putchunk bytes: " + msg);
+			System.out.println("UTILS - Putchunk bytes: " + msg);
 		} catch (UnsupportedEncodingException e) {
-			System.err.println("Server exception: " + e.toString());
+			System.err.println("UTILS - Server exception: " + e.toString());
 			e.printStackTrace();
 		}
 
@@ -100,20 +100,20 @@ public interface Utils {
 		}
 
 		msgReceived = msgReceived.trim();
-		System.out.println("Message received: " + msgReceived);
+		System.out.println("UTILS - Message received: " + msgReceived);
 		String[] components = msgReceived.split(" ");
 		
 		/*para o caso de haver um ou mais " "s no meio dos dados*/
 		if(components[0].equals("PUTCHUNK") && components.length > 7){
 			String temp = components[6];
 			for(int i=7; i<components.length; i++){
-				temp = temp + components[i];
+				temp = temp + components[i] + " ";
 			}
 			components[6] = temp;
 		} else if(components[0].equals("CHUNK") && components.length > 6){
 			String temp = components[5];
 			for(int i=6; i<components.length; i++){
-				temp = temp + components[i];
+				temp = temp + components[i] + " ";
 			}
 			components[5] = temp;
 		}
@@ -135,12 +135,12 @@ public interface Utils {
 
 				return chunk;
 			} else {
-				System.out.println("Message was badly split");
+				System.out.println("UTILS - Message was badly split");
 				return null;
 			}
 
 		} catch (UnsupportedEncodingException e) {
-			System.err.println("Server exception: " + e.toString());
+			System.err.println("UTILS - Server exception: " + e.toString());
 			e.printStackTrace();
 		}
 		return null;

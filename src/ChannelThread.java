@@ -64,7 +64,7 @@ public class ChannelThread extends Thread {
 	
 	public void putchunk(){
 		
-		/* Checks if file exists already */
+		/* Checks if file already exists */
 		String filepath = "/database/" + fileID + "/" + this.chunkNo;
 		File file = new File(filepath);
 		if (!file.exists()) {
