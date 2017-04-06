@@ -14,7 +14,7 @@ public class Peer implements RMIservice {
 	public static InetAddress mcAddress, mdbAddress, mdrAddress;
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
-	public static int maxBytes = 0;
+	public static int maxBytes = 64000000;
 	
 	/* TODO: decidir como/se se guarda listagem de chunks ou ficheiros ou wtv */
 	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();

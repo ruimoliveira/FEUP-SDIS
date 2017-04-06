@@ -26,13 +26,15 @@ public class ChannelThread extends Thread {
 		}
 		
 		if (messageType.equals("PUTCHUNK")) {
-			this.replicationDeg = Integer.parseInt(received[5]);
+			this.replicationDeg = Integer.parseInt(received[5].trim());
 		}
 		
 		if(messageType.equals("CHUNK")){
-			this.chunkData = Utils.stringToByte(received[6]);
+			this.chunkData = received[5].getBytes();
 		} else if (messageType.equals("PUTCHUNK")) {
-			this.chunkData = Utils.stringToByte(received[5]);
+			if(!(received[6]==null)){
+				this.chunkData = received[6].getBytes();
+			}
 		}
 
 		/*
@@ -65,15 +67,16 @@ public class ChannelThread extends Thread {
 	public void putchunk(){
 		
 		/* Checks if file already exists */
-		String filepath = "/database/" + fileID + "/" + this.chunkNo;
-		File file = new File(filepath);
-		if (!file.exists()) {
-			System.out.println("Chunk doesn't exist. Saving file...");
-			//f.mkdirs();
+		String filepath = "database/" + fileID;// + "/" + this.chunkNo;
+		File folder = new File(filepath);
+		if (!folder.exists()) {
+			System.out.println("Creating folder to save new chunk...");
+			folder.mkdirs();
 			
 			/* Check if has enough space */
-			File folder = new File("/database");
-			if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
+			File file = new File(folder.getPath()+"/"+this.chunkNo);
+			//if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
+			if(Peer.maxBytes < 64000){
 				System.out.println("Can not save chunk. Not enough space.");
 			} else {
 				FileOutputStream chunk;
@@ -87,7 +90,7 @@ public class ChannelThread extends Thread {
 					e.printStackTrace();
 				}
 			}
-		} else System.out.println("Chunk already stored.");
+		}// else System.out.println("Chunk already stored.");
 		
 		/* Waiting for an interruption for a random amount of time before sending response */
 		Random rng = new Random();

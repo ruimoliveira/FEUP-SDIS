@@ -46,7 +46,7 @@ public class Backup extends Thread {
 				DatagramPacket rPacket = new DatagramPacket(buf, buf.length);
 				
 				try {
-					Peer.mdbSocket.receive(rPacket);
+					Peer.mcSocket.receive(rPacket);
 				} catch (IOException e) {
 					System.out.println("BACKUP: Could not receive STORED response");
 					e.printStackTrace();

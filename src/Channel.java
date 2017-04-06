@@ -7,8 +7,12 @@ import java.util.ArrayList;
 public class Channel extends Thread {
 
 	protected ArrayList<ChannelThread> interruptableThreads = new ArrayList<ChannelThread>();
+	MulticastSocket socket;
+	Channel(MulticastSocket socket){
+		this.socket = socket;
+	}
 
-	public Channel(MulticastSocket socket) {
+	public void run(){
 		while(true){
 			/*remove completed threads*/
 			ArrayList<Integer> indexes = new ArrayList<Integer>();
@@ -26,7 +30,7 @@ public class Channel extends Thread {
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 			
 			try {
-				socket.setSoTimeout(1500);
+				//socket.setSoTimeout(1500);
 				socket.receive(packet);
 			} catch (SocketTimeoutException ste) {
 				/* Do nothing pls */
@@ -36,7 +40,7 @@ public class Channel extends Thread {
 			
 			/*decode message*/
 			String[] message = Utils.decodeMessage(buf);
-			
+			System.out.println("CHANNEL: protocol received: "+message[0]);
 			/*handle message*/
 			if(message != null && message[0].length() != 0){
 				if(!message[2].equals(Peer.peerID)){
