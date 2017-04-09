@@ -3,7 +3,7 @@ import java.net.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class ChannelThread extends Thread {
+public class ChannelThread implements Runnable {
 
 	protected boolean running;
 	protected String messageType, version, senderID, fileID;
@@ -14,27 +14,28 @@ public class ChannelThread extends Thread {
 		this.running = true;
 		this.buffer = buffer;
 		
-		String[] received = Utils.decodeMessage(buffer);
+		String[] header = Utils.getHeader(buffer);
+		byte[] body = Utils.getBody(buffer);
 		
-		this.messageType = received[0];
-		this.version = received[1];
-		this.senderID = received[2];
-		this.fileID = received[3];
+		this.messageType = header[0];
+		this.version = header[1];
+		this.senderID = header[2];
+		this.fileID = header[3];
 		
 		if (!messageType.equals("DELETE")) {
-			this.chunkNo = Integer.parseInt(received[4]);
+			this.chunkNo = Integer.parseInt(header[4]);
 		}
 		
 		if (messageType.equals("PUTCHUNK")) {
-			this.replicationDeg = Integer.parseInt(received[5].trim());
+			this.replicationDeg = Integer.parseInt(header[5].trim());
 		}
 		
 		if(messageType.equals("CHUNK")){
-			this.chunkData = received[5].getBytes();
+			this.chunkData = body;
 		} else if (messageType.equals("PUTCHUNK")) {
-			if(!(received[6]==null)){
-				this.chunkData = received[6].getBytes();
-			}
+			//if(!(header[6]==null)){
+				this.chunkData = body;
+			//}
 		}
 
 		/*
@@ -64,37 +65,43 @@ public class ChannelThread extends Thread {
 		}
 	}
 	
-	public void putchunk(){
+	void putchunk(){
 		
 		/* Checks if file already exists */
-		String filepath = "database/" + fileID;// + "/" + this.chunkNo;
+		String filepath = "database" + Peer.peerID + "/" + fileID;// + "/" + this.chunkNo;
 		File folder = new File(filepath);
 		if (!folder.exists()) {
 			System.out.println("Creating folder to save new chunk...");
 			folder.mkdirs();
+		}
+	
+		
 			
 			/* Check if has enough space */
 			File file = new File(folder.getPath()+"/"+this.chunkNo);
-			//if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
-			if(Peer.maxBytes < 64000){
-				System.out.println("Can not save chunk. Not enough space.");
-			} else {
-				FileOutputStream chunk;
-				try {
-					/* Stores file */
-					chunk = new FileOutputStream(file);
-					chunk.write(this.chunkData);
-					chunk.close();
-				} catch (IOException e) {
-					System.out.println("CHANNELTHREAD: Error saving to file.");
-					e.printStackTrace();
-				}
-			}
-		}// else System.out.println("Chunk already stored.");
+			if (!file.exists()) {
+				//if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
+				//if(Peer.maxBytes < 64000){
+				//	System.out.println("Can not save chunk. Not enough space.");
+				//} else {
+					FileOutputStream chunk;
+					try {
+						/* Stores file */
+						chunk = new FileOutputStream(file);
+						chunk.write(this.chunkData);
+						chunk.close();
+					} catch (IOException e) {
+						System.out.println("CHANNELTHREAD: Error saving to file.");
+						e.printStackTrace();
+					}
+				//}
+			}else System.out.println("Chunk already stored.");
+		//} else System.out.println("Folder already exists.");
 		
 		/* Waiting for an interruption for a random amount of time before sending response */
 		Random rng = new Random();
 		int r = rng.nextInt(401);
+		
 		try {
 			TimeUnit.MILLISECONDS.sleep(r);
 		} catch (InterruptedException e) {
@@ -105,7 +112,7 @@ public class ChannelThread extends Thread {
 		/* Send STORED message to mcSocket
 		 * STORED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF> */
 		byte[] msg = Utils.codeMessage("STORED", this.fileID, this.chunkNo, null);
-     	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mdbSocket.getLocalAddress(), Peer.mdbSocket.getLocalPort());
+     	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mcAddress, Peer.mcPort);
 		try {
 			Peer.mcSocket.send(packet);
 		} catch (IOException e) {
@@ -145,7 +152,6 @@ public class ChannelThread extends Thread {
 
 	public void stopThread() {
 		running = false;
-		interrupt();
 	}
 
 	public boolean isRelated(String messageType, String fileID, String chunkNoString) {

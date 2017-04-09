@@ -1,171 +1,200 @@
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Base64;
+import java.util.Formatter;
+import java.util.stream.IntStream;
+import java.io.IOException;
+
 
 public interface Utils {
 
-	static byte[] codeMessage(String msg_type, String given_fileID, int given_chunkNo, Chunk chunk) {
-		byte[] msg = null;
-		try {
-			String msg_type2 = msg_type + " ";
-			byte[] msg_type_b = msg_type2.getBytes("US-ASCII");
+	public static byte[] codeMessage(String msg_type, String given_fileID, int given_chunkNo, Chunk chunk) {
+	
+		String protocol = msg_type;
+		String version = Peer.protocolV;
+		String senderID = Peer.peerID;
+		String chunkNo = null;
+		
+		String repDegree = null;
+		char white = ' ';
+		char CR  = (char) 0x0D;
+		char LF  = (char) 0x0A;
+		byte[] result = null;
 
-			String version = Peer.protocolV + " ";
-			byte[] version_b = version.getBytes("US-ASCII");
+		//final IntStream protocol_is = protocol.chars();
+		//final IntStream version_is = version.chars();
+		//final IntStream senderID_is = senderID.chars();
+		//final IntStream chunkNo_is = null;
+		//final IntStream repDegree_is = null;
+		if (!msg_type.equals("DELETE")) {
+			chunkNo = ""+given_chunkNo;
+			//final IntStream chunkNo_is = chunkNo.chars();
+			
+		}
+		if (msg_type.equals("PUTCHUNK")) {
+			repDegree = ""+chunk.getReplication();
+			//final IntStream repDegree_is = repDegree.chars();
+		}
 
-			String sender_id = Peer.peerID + " ";
-			byte[] sender_id_b = sender_id.getBytes("US-ASCII");
-
-			byte[] file_id_b = Base64.getEncoder().encode(given_fileID.getBytes());
-			String tmp = " ";
-			byte[] tmp2 = tmp.getBytes("US-ASCII");
-			//file_id_b.push(tmp2);
-			//byte[] file_id_b = Base64.getEncoder().encode(file_id.getBytes());
-
-			byte[] chunk_no_b = null;
-			if (!msg_type.equals("DELETE")) {
-				String chunk_no = given_chunkNo + " ";
-				chunk_no_b = chunk_no.getBytes("US-ASCII");
+		String fileID64 = bytesToHexString(given_fileID.getBytes());
+		//char[] fileID_is = fileID64.chars();
+				
+		ByteBuffer bb = null;
+		if (msg_type.equals("PUTCHUNK")) {
+			/*
+			 * PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo> <ReplicationDeg> <CRLF><CRLF><Body>
+			 */
+			long size = protocol.length() + version.length() + senderID.length()+
+				fileID64.length() + chunkNo.length()+repDegree.length()+6+4+chunk.getSize();
+			bb = ByteBuffer.allocate((int)size);
+		} else if (msg_type.equals("CHUNK")) {
+			/*
+			 * CHUNK <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF><Body>
+			 */
+			long size = protocol.length() + version.length() + senderID.length()+
+				fileID64.length() + chunkNo.length()+6+4+chunk.getSize();
+			bb = ByteBuffer.allocate((int)size);
+		} else if (msg_type.equals("DELETE")) {
+			/* DELETE <Version> <SenderId> <FileId> <CRLF><CRLF> */
+			long size = protocol.length() + version.length() + senderID.length()+
+				fileID64.length()+6+4;
+			bb = ByteBuffer.allocate((int)size);
+		} else {
+			/*
+			 * STORED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
+			 * GETCHUNK <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
+			 * REMOVED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
+			 */
+			long size = protocol.length() + version.length() + senderID.length()+fileID64.length()+chunkNo.length()+6+4;
+			bb = ByteBuffer.allocate((int)size);
+		}
+			for(int i=0; i<protocol.length();i++){
+				char c = protocol.charAt(i);
+				bb.put((byte)c);
 			}
-
-			byte[] replication_b = null;
-			if (msg_type.equals("PUTCHUNK")) {
-				String replication = ""+chunk.getReplication() + " ";
-				replication_b = replication.getBytes("US-ASCII");
+			//protocol_is.forEach( c -> bb.put((byte)c));
+			bb.put((byte)white);
+			for(int i=0; i<version.length();i++){
+				char c = version.charAt(i);
+				bb.put((byte)c);
 			}
-
-			char CR = (char) 0x0D;
-			char LF = (char) 0x0A;
-			String crlf = "" + CR + LF; // "" forces conversion to string
-			byte[] crlf_b = crlf.getBytes("US-ASCII");
-
-			ByteBuffer bb = null;
-			if (msg_type.equals("PUTCHUNK")) {
-				/*
-				 * PUTCHUNK <Version> <SenderId> <FileId> <ChunkNo> <ReplicationDeg> <CRLF><CRLF><Body>
-				 */
-				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
-					+ tmp2.length + chunk_no_b.length + replication_b.length + crlf_b.length + crlf_b.length + chunk.getSize());
-			} else if (msg_type.equals("CHUNK")) {
-				/*
-				 * CHUNK <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF><Body>
-				 */
-				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
-						+ chunk_no_b.length + crlf_b.length + crlf_b.length + chunk.getSize());
-			} else if (msg_type.equals("DELETE")) {
-				/* DELETE <Version> <SenderId> <FileId> <CRLF><CRLF> */
-				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
-						+ crlf_b.length + crlf_b.length + chunk.getSize());
-			} else {
-				/*
-				 * STORED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
-				 * GETCHUNK <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
-				 * REMOVED <Version> <SenderId> <FileId> <ChunkNo> <CRLF><CRLF>
-				 */
-				bb = ByteBuffer.allocate(msg_type_b.length + version_b.length + sender_id_b.length + file_id_b.length
-						+ tmp2.length + chunk_no_b.length + crlf_b.length + crlf_b.length);
+			//version_is.forEach( c -> bb.put((byte)c));
+			bb.put((byte)white);
+			for(int i=0; i<senderID.length();i++){
+				char c = senderID.charAt(i);
+				bb.put((byte)c);
 			}
-
-			bb.put(msg_type_b);
-			bb.put(version_b);
-			bb.put(sender_id_b);
-			bb.put(file_id_b);
-			bb.put(tmp2);
-			if (!msg_type.equals("DELETE"))
-				bb.put(chunk_no_b);
-
-			if (msg_type.equals("PUTCHUNK"))
-				bb.put(replication_b);
-
-			bb.put(crlf_b);
-			bb.put(crlf_b);
-
+			//senderID_is.forEach( c -> bb.put((byte)c));
+			bb.put((byte)white);
+			for(int i=0; i<fileID64.length();i++){
+				char c = fileID64.charAt(i);
+				bb.put((byte)c);
+			}
+			//fileID_is.forEach( c -> bb.put((byte)c));
+			bb.put((byte)white);
+			if (!msg_type.equals("DELETE")){
+			chunkNo = ""+given_chunkNo;
+			for(int i=0; i<chunkNo.length();i++){
+				char c = chunkNo.charAt(i);
+				bb.put((byte)c);
+			}
+			//final IntStream chunkNo_is = chunkNo.chars();
+			//	chunkNo_is.forEach( c -> bb.put((byte)c));
+				bb.put((byte)white);
+			}
+			if (msg_type.equals("PUTCHUNK")){
+			repDegree = ""+chunk.getReplication();
+			for(int i=0; i<repDegree.length();i++){
+				char c = repDegree.charAt(i);
+				bb.put((byte)c);
+			}
+			//final IntStream repDegree_is = repDegree.chars();
+			//	repDegree_is.forEach( c -> bb.put((byte)c));
+				bb.put((byte)white);
+			}
+			bb.put((byte)CR);
+			bb.put((byte)LF);
+			bb.put((byte)CR);
+			bb.put((byte)LF);
 			if (msg_type.equals("PUTCHUNK") || msg_type.equals("CHUNK")){
 				if(!(chunk.getData()==null)){
 					bb.put(chunk.getData());
 				}else{
 					bb.put(new byte[0]);
 				}
-
 			}
+			
+			result = bb.array();
+			
+			//putchunk(result);
 
-			msg = bb.array();
+			
+		
+		return result;
 
-			System.out.println("UTILS - Putchunk bytes: " + msg);
-		} catch (UnsupportedEncodingException e) {
-			System.err.println("UTILS - Server exception: " + e.toString());
-			e.printStackTrace();
-		}
-
-		return msg;
 	}
-
-	static String[] decodeMessage(byte[] buf) {
-		String msgReceived = null;
-
-		try {
-			msgReceived = new String(buf, "US-ASCII");
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
-		}
-		char CR = (char) 0x0D;
-		char LF = (char) 0x0A;
-		String crlf = "" + CR + LF;
-		crlf = crlf+crlf;
-		int index = msgReceived.indexOf(crlf);
-		//String header = 
-		//String body =
-		
-
-		msgReceived = msgReceived.trim();
-		
-		String[] components = msgReceived.split(crlf);
-		String[] header = components[0].split(" ");
-		String body;
-
-		
-		
-		try{
-		//byte[] fid_b = header[3].getBytes("US-ASCII");
-			byte[] fid = Base64.getDecoder().decode(header[3].getBytes());
 	
-			header[3] = new String(fid);
-		} catch (IllegalArgumentException e1) {
-			e1.printStackTrace();
+	static String[] getHeader(byte[] msg) {
+		int header_end = 0;
+
+		for(int i=0; i<msg.length;i++){
+			if((msg[i]==(char)0x0D)){
+				header_end = i;
+				break;
+			}
 		}
-		int size = header.length;
-		String[] msgDecoded = new String[size+1];
-		for(int i=0; i<size;i++){
-			msgDecoded[i]=header[i];
-		}
-		if(components.length>1){
-			body = components[1];
-			msgDecoded[size]=body;
+		byte[] h = new byte[header_end+1];
+		for(int i=0; i<header_end;i++){
+			h[i]=msg[i];
 		}
 		
+		String header = new String(h);
+		String[] header_parts = header.split(" ");
 
-		System.out.println("UTILS - Message received: " + components[0]);
-		System.out.println("UTILS - Message received: " + header[3]);
-		System.out.println("UTILS - Message received parts: " + components.length);
-		/*para o caso de haver um ou mais " "s no meio dos dados*/
-		/*if(components[0].equals("PUTCHUNK") && components.length > 7){
-			String temp = components[6];
-			for(int i=7; i<components.length; i++){
-				temp = temp + components[i] + " ";
-			}
-			components[6] = temp;
-		} else if(components[0].equals("CHUNK") && components.length > 6){
-			String temp = components[5];
-			for(int i=6; i<components.length; i++){
-				temp = temp + components[i] + " ";
-			}
-			components[5] = temp;
-		}*/
+		return header_parts;
+	}
+	static byte[] getBody(byte[] msg) {
+		
+		int body_start = 0;
 
-		return msgDecoded;
+		for(int i=0; i<msg.length;i++){
+			if((msg[i]==(char)0x0D)){
+				System.out.println(i);
+				body_start = i+4;
+				break;
+			}
+		}
+
+		byte[] body = null;
+		if(!(body_start==msg.length)){
+
+			body = new byte[msg.length-body_start];
+
+			for(int j= body_start; j< msg.length ;j++){
+
+				body[j-body_start] = msg[j];
+
+			}
+
+		}
+		
+		return body;
 	}
 
-	static byte[] stringToByte(String body) {
+
+
+	public static String bytesToHexString(byte[] bytes) {
+	    StringBuilder sb = new StringBuilder(bytes.length * 2);
+	 
+	    Formatter formatter = new Formatter(sb);
+	    for (byte b : bytes) {
+	        formatter.format("%02x", b);
+	    }
+	    formatter.close();
+	    return sb.toString();
+	}
+
+	/*static byte[] stringToByte(String body) {
 
 		try {
 			char CR = (char) 0x0D;
@@ -188,5 +217,5 @@ public interface Utils {
 			e.printStackTrace();
 		}
 		return null;
-	}
+	}*/
 }

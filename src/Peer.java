@@ -7,6 +7,11 @@ import java.util.ArrayList;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.*;
+
+/*****************+
+239.255.42.91 1101 239.255.42.92 1102 239.255.42.93 1103
+*//////////////
 
 public class Peer implements RMIservice {
 
@@ -15,11 +20,13 @@ public class Peer implements RMIservice {
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
 	public static int maxBytes = 64000000;
+	private final ExecutorService pool = Executors.newFixedThreadPool(10);
 	
 	/* TODO: decidir como/se se guarda listagem de chunks ou ficheiros ou wtv */
 	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();
 
 	public static void main(String[] args) throws IOException {
+		
 
 		/* usage */
 		if (args.length != 9) {
@@ -56,7 +63,7 @@ public class Peer implements RMIservice {
 
 			// Bind the remote object's stub in the registry
 			Registry registry = LocateRegistry.getRegistry();
-			registry.bind(serviceAP, stub);
+			registry.rebind(serviceAP, stub);
 
 			System.err.println("PEER: Server ready");
 		} catch (Exception e) {
@@ -76,17 +83,30 @@ public class Peer implements RMIservice {
 		mdbSocket = new MulticastSocket(mdbPort);
 		mdrSocket = new MulticastSocket(mdrPort);
 
+		mcSocket.setTimeToLive(1);
+		mdbSocket.setTimeToLive(1);
+		mdrSocket.setTimeToLive(1);
+
 		mcSocket.joinGroup(mcAddress);
 		mdbSocket.joinGroup(mdbAddress);
 		mdrSocket.joinGroup(mdrAddress);
 
+		//mcSocket.setBroadcast(true);
+		//mcSocket.setLoopbackMode(true);
+
+		//mdbSocket.setBroadcast(true);
+		//mdbSocket.setLoopbackMode(true);
+
+		//mdrSocket.setBroadcast(true);
+		//mdrSocket.setLoopbackMode(true);
+
 		/* init channels */
 		System.out.println("PEER: MC channel start");
-		new Channel(mcSocket).start();
+		(new Thread(new Channel(mcSocket))).start();
 		System.out.println("PEER: MDB channel start");
-		new Channel(mdbSocket).start();
+		(new Thread(new Channel(mdbSocket))).start();
 		System.out.println("PEER: MDR channel start");
-		new Channel(mdrSocket).start();
+		(new Thread(new Channel(mdrSocket))).start();
 	}
 
 	// file_path, rep
@@ -105,15 +125,16 @@ public class Peer implements RMIservice {
 				byte[] file_bytes = Files.readAllBytes(f.toPath());
 				System.out.println("PEER: file size is " + file_bytes.length + " byte");
 
-				String fileID = MyFile.makeFileID(f);
+				byte[] fileID = MyFile.makeFileID(f);
 				System.out.println("PEER: SHA256 code is " + fileID);
 				
-				MyFile myfile = new MyFile(fileID, peerID, rep_degree, file_bytes.length, file_bytes);
+				MyFile myfile = new MyFile(new String(fileID), peerID, rep_degree, file_bytes.length, file_bytes);
 				System.out.println("PEER: Num of chunks is " + myfile.chunks.size());
 				int total = 0;
 				for (int i = 0; i < myfile.chunks.size(); i++) {
 					total = total + myfile.chunks.get(i).getSize();
-					new Backup(myfile.chunks.get(i), mdbSocket).start();
+					pool.execute( new Backup(myfile.chunks.get(i)) );
+					//(new Thread(new Backup(myfile.chunks.get(i), mdbSocket))).start();
 				}
 				System.out.println("PEER: Size Total Chunks is " + total);
 
@@ -134,10 +155,10 @@ public class Peer implements RMIservice {
 			System.out.println("PEER: File to receive data not created.");
 			return;
 		} else {
-			String fileID = MyFile.makeFileID(f);
+			byte[] fileID = MyFile.makeFileID(f);
 			System.out.println("PEER: SHA256 code is " + fileID);
 			
-			new Restore(f, fileID).start();
+			new Restore(f, new String(fileID)).start();
 		}
 	}
 
@@ -158,5 +179,6 @@ public class Peer implements RMIservice {
 
 	/**/
 	public Peer() {
+		
 	}
 }

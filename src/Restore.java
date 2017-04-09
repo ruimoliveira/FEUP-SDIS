@@ -44,19 +44,20 @@ public class Restore extends Thread {
 			}
 			
 			/*convert to string*/
-			String[] msgReceived = Utils.decodeMessage(buf);
+			String[] header = Utils.getHeader(buf);
+			byte[] body = Utils.getBody(buf);
 
 			/* if msg is relevant then saves the peerID of the sender who stored the chunk> */
-			if (msgReceived[0].equals("CHUNK") && msgReceived[1].equals(Peer.protocolV)
-					&& msgReceived[3].equals(this.fileID)
-					&& Integer.parseInt(msgReceived[4]) == chunkNo) {
+			if (header[0].equals("CHUNK") && header[1].equals(Peer.protocolV)
+					&& header[3].equals(this.fileID)
+					&& Integer.parseInt(header[4]) == chunkNo) {
 				System.out.println("RESTORE: Received CHUNK response");
 				
-				byte[] chunk = Utils.stringToByte(msgReceived[5]);
+				//byte[] chunk = Utils.stringToByte(msgReceived[5]);
 				
 				/*TODO: save CHUNK*/
 
-				if(chunk.length < 64000){
+				if(body.length < 64000){
 					lastChunk = true;
 				}
 			}

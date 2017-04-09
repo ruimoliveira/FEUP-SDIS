@@ -104,16 +104,17 @@ public class MyFile {
 		}
 		if (remainder == 0) {
 			chunkNo++;
-			c = new Chunk(this.fileID, chunkNo, this.replication, 0, null);
+			c = new Chunk(this.fileID, chunkNo, this.replication, 0, new byte[0]);
 			this.chunks.add(c);
 		}
 
 	}
 
-	public static String makeFileID(File f) {
-		String fileID = "";
+	public static byte[] makeFileID(File f) {
+		byte[] fileID = null;
+		MessageDigest md;
 
-		try {
+		try{
 			FileTime ft = Files.getLastModifiedTime(f.toPath());
 			UserPrincipal up = Files.getOwner(f.toPath());
 			String owner = up.getName();
@@ -122,23 +123,17 @@ public class MyFile {
 			System.out.println("File Name: " + file_name);
 			System.out.println("Owner: " + owner);
 			System.out.println("Last Modified: " + modified);
+			String metadata = file_name + Long.toString(modified) + owner;
 
-			try {
-				MessageDigest md = MessageDigest.getInstance("SHA-256");
-				String metadata = file_name + Long.toString(modified) + owner;
-
+			
+				md = MessageDigest.getInstance("SHA-256");
 				md.update(metadata.getBytes("UTF-8"));
-				byte[] digest = md.digest();
-				fileID = new String(digest);
-			} catch (NoSuchAlgorithmException e) {
+				fileID = md.digest();
+				
+			} catch (IOException | NoSuchAlgorithmException e) {
 				System.err.println("Server exception: " + e.toString());
 				e.printStackTrace();
 			}
-
-		} catch (IOException e) {
-			System.err.println("Server exception: " + e.toString());
-			e.printStackTrace();
-		}
 
 		return fileID;
 	}
