@@ -1,30 +1,22 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.concurrent.*;
 
-public class Backup implements Runnable{
+public class Backup implements Runnable {
 	Chunk chunk;
-	//private final MulticastSocket mdb;
 	ArrayList<String> guardians = new ArrayList<String>();
-
 
 	public Backup(Chunk chunk) {
 		this.chunk = chunk;
-		//this.mdb = mdb;
 	}
 
 	public void run() {
-		
-     			for (int i = 0; i < 5; i++) {
 
-			System.out.println("BACKUP: number of guardians 8888888888888888888888888888888888888888888888888888888888888888888   " + guardians.size());
-
-				System.out.println("BACKUP: i=" + i);
-				byte[] msg = Utils.codeMessage("PUTCHUNK", chunk.getFileID(), chunk.getChunkNo(), chunk);
-        			
+		for (int i = 0; i < 5; i++) {
+			/* SEND START */
+			byte[] msg = Utils.codeMessage("PUTCHUNK", chunk.getFileID(), chunk.getChunkNo(), chunk);
 			DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mdbAddress, Peer.mdbPort);
-         	
+
 			try {
 				Peer.mdbSocket.send(packet);
 			} catch (IOException e) {
@@ -119,5 +111,3 @@ public class Backup implements Runnable{
 	}
 
 }
-
-

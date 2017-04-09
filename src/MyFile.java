@@ -65,7 +65,7 @@ public class MyFile {
 				chunk[counter] = this.content[i];
 				counter++;
 			}
-			c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 			this.chunks.add(c);
 
 		} else {
@@ -86,7 +86,7 @@ public class MyFile {
 						counter++;
 					} else {
 
-						c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+						c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 						this.chunks.add(c);
 						counter = 0;
 						chunk[counter] = this.content[i];
@@ -99,22 +99,21 @@ public class MyFile {
 					}
 				}
 			}
-			c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 			this.chunks.add(c);
 		}
 		if (remainder == 0) {
 			chunkNo++;
-			c = new Chunk(this.fileID, chunkNo, this.replication, 0, new byte[0]);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, 0, new byte[0]);
 			this.chunks.add(c);
 		}
 
 	}
 
-	public static byte[] makeFileID(File f) {
-		byte[] fileID = null;
-		MessageDigest md;
+	public static String makeFileID(File f) {
+		String fileID = "";
 
-		try{
+		try {
 			FileTime ft = Files.getLastModifiedTime(f.toPath());
 			UserPrincipal up = Files.getOwner(f.toPath());
 			String owner = up.getName();

@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -14,28 +15,23 @@ public class ChannelThread implements Runnable {
 		this.running = true;
 		this.buffer = buffer;
 		
-		String[] header = Utils.getHeader(buffer);
-		byte[] body = Utils.getBody(buffer);
+		String[] received = Utils.getHeader(buffer);
 		
-		this.messageType = header[0];
-		this.version = header[1];
-		this.senderID = header[2];
-		this.fileID = header[3];
+		this.messageType = received[0];
+		this.version = received[1];
+		this.senderID = received[2];
+		this.fileID = received[3];
 		
 		if (!messageType.equals("DELETE")) {
-			this.chunkNo = Integer.parseInt(header[4]);
+			this.chunkNo = Integer.parseInt(received[4]);
 		}
 		
 		if (messageType.equals("PUTCHUNK")) {
-			this.replicationDeg = Integer.parseInt(header[5].trim());
+			this.replicationDeg = Integer.parseInt(received[5].trim());
 		}
 		
-		if(messageType.equals("CHUNK")){
-			this.chunkData = body;
-		} else if (messageType.equals("PUTCHUNK")) {
-			//if(!(header[6]==null)){
-				this.chunkData = body;
-			//}
+		if(messageType.equals("CHUNK") || messageType.equals("PUTCHUNK")){
+			this.chunkData = Utils.getBody(buffer);
 		}
 
 		/*
@@ -68,35 +64,32 @@ public class ChannelThread implements Runnable {
 	void putchunk(){
 		
 		/* Checks if file already exists */
-		String filepath = "database" + Peer.peerID + "/" + fileID;// + "/" + this.chunkNo;
+		String filepath = "database/" + Peer.peerID + "/" + fileID;// + "/" + this.chunkNo;
 		File folder = new File(filepath);
 		if (!folder.exists()) {
 			System.out.println("Creating folder to save new chunk...");
 			folder.mkdirs();
 		}
-	
-		
-			
-			/* Check if has enough space */
-			File file = new File(folder.getPath()+"/"+this.chunkNo);
-			if (!file.exists()) {
-				//if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
-				//if(Peer.maxBytes < 64000){
-				//	System.out.println("Can not save chunk. Not enough space.");
-				//} else {
-					FileOutputStream chunk;
-					try {
-						/* Stores file */
-						chunk = new FileOutputStream(file);
-						chunk.write(this.chunkData);
-						chunk.close();
-					} catch (IOException e) {
-						System.out.println("CHANNELTHREAD: Error saving to file.");
-						e.printStackTrace();
-					}
-				//}
-			}else System.out.println("Chunk already stored.");
-		//} else System.out.println("Folder already exists.");
+		/* Check if has enough space */
+		File file = new File(folder.getPath()+"/"+this.chunkNo);
+		if (!file.exists()) {
+			//if (Peer.maxBytes < (folder.length() + this.chunkData.length) || Peer.maxBytes != 0) {
+			//if(Peer.maxBytes < 64000){
+			//	System.out.println("Can not save chunk. Not enough space.");
+			//} else {
+				FileOutputStream chunk;
+				try {
+					/* Stores file */
+					chunk = new FileOutputStream(file);
+					chunk.write(this.chunkData);
+					chunk.close();
+				} catch (IOException e) {
+					System.out.println("CHANNELTHREAD: Error saving to file.");
+					e.printStackTrace();
+				}
+			//}
+		}else System.out.println("Chunk already stored.");
+		// else System.out.println("Chunk already stored.");
 		
 		/* Waiting for an interruption for a random amount of time before sending response */
 		Random rng = new Random();
@@ -116,7 +109,7 @@ public class ChannelThread implements Runnable {
 		try {
 			Peer.mcSocket.send(packet);
 		} catch (IOException e) {
-			System.out.println("Could not respond to PUTCHUNK message");
+			System.out.println("CHANNELTHREAD: Could not respond to PUTCHUNK message");
 		}
 		
 	}
@@ -125,10 +118,27 @@ public class ChannelThread implements Runnable {
 		/*TODO received getchunk thread
 		 * 1. verificar se tem ficheiro
 		 * 2. se tem envia, se nao, ignora
-		 * 3. espera um tempo aleatorio entre 0 e 400 ms
-		 * 4. se receber uma mensagem tipo CHUNK acaba a funcao sem enviar resposta
-		 * 5. manda mensagem CHUNK para mdrSocket
+		 * 3. espera um tempo aleatorio entre 0 e 400 ms por uma mensagem do tipo CHUNK
+		 * 4. se a mensagem tipo CHUNK for uma igual 'a que ia mandar nao faz mais nada
+		 * 5. else manda mensagem CHUNK para mdrSocket
 		 * */
+
+		String chunkpath = "database/" + Peer.peerID + "/" + fileID + "/" + this.chunkNo;
+		File chunkFile = new File(chunkpath);
+		if (chunkFile.exists() && !chunkFile.isDirectory()) {
+			/* Prepare message */
+			byte[] chunk_bytes;
+			try {
+				chunk_bytes = Files.readAllBytes(chunkFile.toPath());
+				Chunk chunk = new Chunk(this.fileID, this.chunkNo, 0, chunk_bytes.length, chunk_bytes);
+				byte[] msg = Utils.codeMessage("CHUNK", this.fileID, this.chunkNo, chunk);
+			} catch (IOException e) {
+				System.out.println("CHANNELTHREAD: Error loading chunk to send.");
+			}
+		}
+		
+		/* TODO: CONTINUAR AQUI!!! */
+		
 	}
 	
 	public void delete(){
