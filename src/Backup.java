@@ -30,27 +30,32 @@ public class Backup implements Runnable {
 			long startTime = System.currentTimeMillis();
 			byte[] buf = new byte[256];
 			DatagramPacket rPacket = new DatagramPacket(buf, buf.length);
-			
-			
-			long time = 1000 * (int)Math.pow(2,i);
+
+			long time = 1000 * (int) Math.pow(2, i);
 			long initTime = System.currentTimeMillis();
-			//long timeLapse = 0;
-			while (false || (System.currentTimeMillis() - initTime) < time/*time >= 0*/) {
-				//time = time - timeLapse;
-				//long initTime = System.currentTimeMillis();
+			// long timeLapse = 0;
+			while (false || (System.currentTimeMillis()
+					- initTime) < time/* time >= 0 */) {
+				// time = time - timeLapse;
+				// long initTime = System.currentTimeMillis();
 				try {
 					System.out.println("BACKUP: Waiting for response..." + time);
 					Peer.mcSocket.setSoTimeout(20);
 					Peer.mcSocket.receive(rPacket);
 
-
-					/*convert to string*/
+					/* convert to string */
 					String[] header = Utils.getHeader(buf);
-					//byte[] body = Utils.getBody(buf);
+					// byte[] body = Utils.getBody(buf);
 
-					/* if msg is relevant then saves the peerID of the sender who stored the chunk> */
+					/*
+					 * if msg is relevant then saves the peerID of the sender
+					 * who stored the chunk>
+					 */
 					if (header[0] != null)
-						if (header[0].equals("STORED") && header[1].equals(Peer.protocolV) && !(header[2].equals(Peer.peerID)) && !isGuardian(header[2]) && header[3].equals(chunk.getFileID()) && Integer.parseInt(header[4]) == chunk.getChunkNo()) {
+						if (header[0].equals("STORED") && header[1].equals(Peer.protocolV)
+								&& !(header[2].equals(Peer.peerID)) && !isGuardian(header[2])
+								&& header[3].equals(chunk.getFileID())
+								&& Integer.parseInt(header[4]) == chunk.getChunkNo()) {
 							System.out.println("BACKUP: Received STORED response");
 							guardians.add(header[2]);
 						}
@@ -59,10 +64,10 @@ public class Backup implements Runnable {
 				} catch (IOException e) {
 					System.out.println("BACKUP: Could not receive STORED response");
 					e.printStackTrace();
-				
+
 				}
-				//System.out.println("BACKUP: timelapse..." + timeLapse);
-				//timeLapse = System.currentTimeMillis() - initTime;
+				// System.out.println("BACKUP: timelapse..." + timeLapse);
+				// timeLapse = System.currentTimeMillis() - initTime;
 			}
 
 			// if has enough guardians stops
@@ -71,35 +76,11 @@ public class Backup implements Runnable {
 				break;
 			}
 
+		}
 
-   }
+	}
 
-
-
-				
-       			}
-
-
-	
-			/*TODO: save guardians as requested in project specifications*/
-     
-/*	public void shutdownAndAwaitTermination(ExecutorService pool) {
-	   pool.shutdown(); // Disable new tasks from being submitted
-	   try {
-	     // Wait a while for existing tasks to terminate
-	     if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-	       pool.shutdownNow(); // Cancel currently executing tasks
-	       // Wait a while for tasks to respond to being cancelled
-	       if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-		   System.err.println("Pool did not terminate");
-	     }
-	   } catch (InterruptedException ie) {
-	     // (Re-)Cancel if current thread also interrupted
-	     pool.shutdownNow();
-	     // Preserve interrupt status
-	     Thread.currentThread().interrupt();
-	   }
-	 }*/
+	/* TODO: save guardians as requested in project specifications */
 
 	private boolean isGuardian(String guardian) {
 		for (int i = 0; i < guardians.size(); i++) {
