@@ -125,20 +125,53 @@ public class ChannelThread implements Runnable {
 
 		String chunkpath = "database/" + Peer.peerID + "/" + fileID + "/" + this.chunkNo;
 		File chunkFile = new File(chunkpath);
+		Chunk chunk = null;
+		byte[] msg = null;
 		if (chunkFile.exists() && !chunkFile.isDirectory()) {
 			/* Prepare message */
 			byte[] chunk_bytes;
 			try {
 				chunk_bytes = Files.readAllBytes(chunkFile.toPath());
-				Chunk chunk = new Chunk(this.fileID, this.chunkNo, 0, chunk_bytes.length, chunk_bytes);
-				byte[] msg = Utils.codeMessage("CHUNK", this.fileID, this.chunkNo, chunk);
+				chunk = new Chunk(this.fileID, this.chunkNo, 0, chunk_bytes.length, chunk_bytes);
+				msg = Utils.codeMessage("CHUNK", this.fileID, this.chunkNo, chunk);
 			} catch (IOException e) {
 				System.out.println("CHANNELTHREAD: Error loading chunk to send.");
+				return;
+			}
+
+			/* Wait for a random amount of time between 0 and 400 ms for a CHUNK message. */
+			byte[] buf = new byte[64256];
+			DatagramPacket rPacket = new DatagramPacket(buf, buf.length);
+			try {
+				System.out.println("CHANNELTHREAD: Waiting for CHUNK interruption...");
+				Peer.mdrSocket.setSoTimeout(400);
+				Peer.mdrSocket.receive(rPacket);
+
+				/* convert to string */
+				String[] header = Utils.getHeader(buf);
+
+				/* If a CHUNK message was received, means there's no need to send one. */
+				if (header[0] != null)
+					if (header[0].equals("CHUNK") && header[1].equals(Peer.protocolV)
+							&& !(header[2].equals(Peer.peerID)) && header[3].equals(chunk.getFileID())
+							&& Integer.parseInt(header[4]) == chunk.getChunkNo()) {
+						System.out.println("CHANNELTHREAD: Received CHUNK response, no need to send another one.");
+						return;
+					}
+			} catch (SocketTimeoutException e) {
+			} catch (IOException e) {
+				System.out.println("CHANNELTHREAD: Error reading from MDR Socket");
+				return;
+			}
+			
+	     	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mdrAddress, Peer.mdrPort);
+			try {
+				Peer.mdrSocket.send(packet);
+			} catch (IOException e) {
+				System.out.println("CHANNELTHREAD: Error reading from MDR Socket");
+				e.printStackTrace();
 			}
 		}
-		
-		/* TODO: CONTINUAR AQUI!!! */
-		
 	}
 	
 	public void delete(){

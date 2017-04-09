@@ -34,8 +34,7 @@ public class Backup implements Runnable {
 			long time = 1000 * (int) Math.pow(2, i);
 			long initTime = System.currentTimeMillis();
 			// long timeLapse = 0;
-			while (false || (System.currentTimeMillis()
-					- initTime) < time/* time >= 0 */) {
+			while (false || (System.currentTimeMillis() - initTime) < time/* time >= 0 */) {
 				// time = time - timeLapse;
 				// long initTime = System.currentTimeMillis();
 				try {
