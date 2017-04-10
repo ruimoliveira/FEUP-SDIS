@@ -44,7 +44,7 @@ public class TestApp {
 				stub.restore(args[2]);
 				break;
 			case "DELETE":
-				stub.delete();
+				stub.delete(args[2]);
 				break;
 			case "RECLAIM":
 				stub.reclaim();

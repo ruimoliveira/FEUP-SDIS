@@ -38,7 +38,6 @@ public class Backup implements Runnable {
 				// time = time - timeLapse;
 				// long initTime = System.currentTimeMillis();
 				try {
-					System.out.println("BACKUP: Waiting for response..." + time);
 					Peer.mcSocket.setSoTimeout(20);
 					Peer.mcSocket.receive(rPacket);
 
@@ -76,6 +75,7 @@ public class Backup implements Runnable {
 			}
 
 		}
+		System.out.println("BACKUP: finished");
 
 	}
 

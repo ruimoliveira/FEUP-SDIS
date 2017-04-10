@@ -6,7 +6,7 @@ import java.net.DatagramPacket;
 import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
 
-public class Restore extends Thread {
+public class Restore implements Runnable {
 
 	File recipentFile;
 	String fileID;
@@ -25,7 +25,7 @@ public class Restore extends Thread {
 			/* Start sending GETCHUNK message*/
 			byte[] msg = Utils.codeMessage("GETCHUNK", this.fileID, chunkNo, null);
 
-         	DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mcSocket.getLocalAddress(), Peer.mcSocket.getLocalPort());
+         		DatagramPacket packet = new DatagramPacket(msg, msg.length, Peer.mcAddress, Peer.mcPort);
 			try {
 				Peer.mcSocket.send(packet);
 			} catch (IOException e) {
@@ -33,6 +33,7 @@ public class Restore extends Thread {
 				e.printStackTrace();
 			}
 			System.out.println("RESTORE: Sent GETCHUNK message");
+			System.out.println("RESTORE: "+ msg);
 			/* Finish sending*/
 
 			/* RECEIVE START */
@@ -60,7 +61,7 @@ public class Restore extends Thread {
 								&& Integer.parseInt(msgReceived[4]) == chunkNo) {
 							System.out.println("RESTORE: Received CHUNK response");
 							
-							byte[] body = Utils.getBody(buf);
+							byte[] body = Utils.getBody(rPacket.getData(), rPacket.getLength());
 							if (body == null || body.length < 64000) {
 								lastChunk = true;
 							}

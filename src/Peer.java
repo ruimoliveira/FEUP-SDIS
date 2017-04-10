@@ -2,6 +2,8 @@ import java.net.*;
 import java.io.*;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 import java.rmi.registry.Registry;
@@ -20,7 +22,7 @@ public class Peer implements RMIservice {
 	public static int mcPort, mdbPort, mdrPort;
 	public static MulticastSocket mcSocket, mdbSocket, mdrSocket;
 	public static int maxBytes = 64000000;
-	private final ExecutorService pool = Executors.newFixedThreadPool(10);
+	private final ExecutorService pool = Executors.newFixedThreadPool(20);
 	
 	/* TODO: decidir como/se se guarda listagem de chunks ou ficheiros ou wtv */
 	static ArrayList<ArrayList<String>> db = new ArrayList<ArrayList<String>>();
@@ -72,7 +74,7 @@ public class Peer implements RMIservice {
 		}
 
 		/* creates folder to save chunks if it doesn't exist already */
-		File f = new File("database");
+		File f = new File("db");
 		if (!f.exists() || !f.isDirectory()) {
 			System.out.println("PEER: Creating directory for file storage...");
 			f.mkdir();
@@ -121,14 +123,23 @@ public class Peer implements RMIservice {
 		} else {
 			System.out.println("PEER: File loaded.");
 			try {
-
-				byte[] file_bytes = Files.readAllBytes(f.toPath());
+				//Path path = Paths.get(file_path);
+				//byte[] file_bytes = Files.readAllBytes(path);
+				byte[] file_bytes = new byte[(int) f.length()];
+				InputStream is = new BufferedInputStream( new FileInputStream(f) );
+			    int bytesRead = 0;
+			    while (bytesRead != -1)
+			    	bytesRead = is.read(file_bytes);
+			    is.close();
 				System.out.println("PEER: file size is " + file_bytes.length + " byte");
-
-				byte[] fileID = MyFile.makeFileID(f);
+				
+				//byte[] fileID = MyFile.makeFileID(f);
+				String[] aux = file_path.split("/");
+				String fileID = aux[aux.length-1];
 				System.out.println("PEER: SHA256 code is " + fileID);
 				
 				MyFile myfile = new MyFile(new String(fileID), peerID, rep_degree, file_bytes.length, file_bytes);
+				
 				System.out.println("PEER: Num of chunks is " + myfile.chunks.size());
 				int total = 0;
 				for (int i = 0; i < myfile.chunks.size(); i++) {
@@ -151,20 +162,34 @@ public class Peer implements RMIservice {
 		System.out.println("PEER: Request for file restore received.");
 		
 		File f = new File(file_path);
-		if (!f.exists()) {
-			System.out.println("PEER: File to receive data not created.");
+		/*if (!f.exists()) {
+			System.out.println("PEER: File doesn't exist. Can't create file ID. ");
 			return;
-		} else {
-			byte[] fileID = MyFile.makeFileID(f);
-			System.out.println("PEER: SHA256 code is " + fileID);
+		} else {*/
+			//byte[] fileID = MyFile.makeFileID(f);
+			String[] aux = file_path.split("/");
+			String fileID = aux[aux.length-1];
+			//String fileID64 = bytesToHexString(fileID.getBytes());
+			System.out.println("PEER: File ID is " + fileID);
 			
-			new Restore(f, new String(fileID)).start();
-		}
+			pool.execute(new Restore(f,fileID));
+		//}
 	}
 
-	public void delete() {
+	public void delete(String file_path) {
 		System.out.println("recebi pedido de delete");
-		/* TODO: Delete.java */
+		        
+		System.out.println("PEER: Request for file delete received.");
+
+		File f = new File(file_path);
+		if (!f.exists()) {
+			System.out.println("PEER: File doesn't exist.");
+
+		} else {
+			System.out.println("PEER: File exists.");
+			(new Thread(new Delete(file_path))).start();
+
+		}
 	}
 
 	public void reclaim() {

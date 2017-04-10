@@ -21,6 +21,7 @@ public class Channel implements Runnable {
 			byte[] buf = new byte[64256];
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 			
+			
 			try {
 				socket.setSoTimeout(400);
 				socket.receive(packet);
@@ -37,7 +38,7 @@ public class Channel implements Runnable {
 				if(!message[2].equals(Peer.peerID)){
 					System.out.println("CHANNEL: protocol received: " + message[0]);
 					try {
-						(new Thread(new ChannelThread(buf))).start();
+						(new Thread(new ChannelThread(packet))).start();
 					} catch (IOException e) {
 						System.out.println("CHANNEL: Error starting thread");
 						e.printStackTrace();
@@ -45,10 +46,5 @@ public class Channel implements Runnable {
 				}
 			}
 		}
-	}
-	public void setRunning(boolean s){
-		socket.close();
-		this.running=s;
-	}
-	
+	}	
 }

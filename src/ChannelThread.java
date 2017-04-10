@@ -7,16 +7,17 @@ import java.util.concurrent.TimeUnit;
 public class ChannelThread implements Runnable {
 
 	protected boolean running;
-	protected String messageType, version, senderID, fileID;
+	protected String messageType, version, senderID,fileID ;
 	protected int chunkNo, replicationDeg;
-	protected byte[] buffer, chunkData;
+	protected byte[] chunkData;
+	DatagramPacket packet;
 	
-	public ChannelThread(byte[] buffer) throws IOException {
+	public ChannelThread(DatagramPacket packet) throws IOException {
 		this.running = true;
-		this.buffer = buffer;
+		this.packet = packet;
 		
-		String[] received = Utils.getHeader(buffer);
-		
+		String[] received = Utils.getHeader(packet.getData());
+		System.out.println("CHANNELTHREAD: 22"+received[0]);
 		this.messageType = received[0];
 		this.version = received[1];
 		this.senderID = received[2];
@@ -31,7 +32,7 @@ public class ChannelThread implements Runnable {
 		}
 		
 		if(messageType.equals("CHUNK") || messageType.equals("PUTCHUNK")){
-			this.chunkData = Utils.getBody(buffer);
+			this.chunkData = Utils.getBody(packet.getData(), packet.getLength());
 		}
 
 		/*
@@ -64,7 +65,7 @@ public class ChannelThread implements Runnable {
 	void putchunk(){
 		
 		/* Checks if file already exists */
-		String filepath = "database/" + Peer.peerID + "/" + fileID;// + "/" + this.chunkNo;
+		String filepath = "db/" + Peer.peerID + "/" + fileID;// + "/" + this.chunkNo;
 		File folder = new File(filepath);
 		if (!folder.exists()) {
 			System.out.println("Creating folder to save new chunk...");
@@ -77,10 +78,11 @@ public class ChannelThread implements Runnable {
 			//if(Peer.maxBytes < 64000){
 			//	System.out.println("Can not save chunk. Not enough space.");
 			//} else {
-				FileOutputStream chunk;
+			FileOutputStream chunk;
 				try {
 					/* Stores file */
 					chunk = new FileOutputStream(file);
+					file.createNewFile();
 					chunk.write(this.chunkData);
 					chunk.close();
 				} catch (IOException e) {
@@ -99,6 +101,7 @@ public class ChannelThread implements Runnable {
 			TimeUnit.MILLISECONDS.sleep(r);
 		} catch (InterruptedException e) {
 			/*PUTCHUNK thread interrupted*/
+			System.out.println("Error random");
 			e.printStackTrace();
 		}
 		
@@ -111,19 +114,13 @@ public class ChannelThread implements Runnable {
 		} catch (IOException e) {
 			System.out.println("CHANNELTHREAD: Could not respond to PUTCHUNK message");
 		}
+		System.out.println("CHANNELTHREAD: STORED message sent.");
 		
 	}
 	
-	public void getchunk(){
-		/*TODO received getchunk thread
-		 * 1. verificar se tem ficheiro
-		 * 2. se tem envia, se nao, ignora
-		 * 3. espera um tempo aleatorio entre 0 e 400 ms por uma mensagem do tipo CHUNK
-		 * 4. se a mensagem tipo CHUNK for uma igual 'a que ia mandar nao faz mais nada
-		 * 5. else manda mensagem CHUNK para mdrSocket
-		 * */
-
-		String chunkpath = "database/" + Peer.peerID + "/" + fileID + "/" + this.chunkNo;
+	public void getchunk() {
+		
+		String chunkpath = "db/" + Peer.peerID + "/" + fileID + "/" + this.chunkNo;
 		File chunkFile = new File(chunkpath);
 		Chunk chunk = null;
 		byte[] msg = null;
@@ -168,17 +165,30 @@ public class ChannelThread implements Runnable {
 			try {
 				Peer.mdrSocket.send(packet);
 			} catch (IOException e) {
-				System.out.println("CHANNELTHREAD: Error reading from MDR Socket");
+				System.out.println("CHANNELTHREAD: Error sending from MDR Socket");
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	public void delete(){
-		/*TODO received delete thread
+	public void delete() {
+		/*
+		 * TODO received delete thread
 		 * 1. apagar todos os chunks com fileID especificado
-		 * */
-		
+		 */
+		String filepath = "db/" + Peer.peerID + "/" + fileID;
+		File folder = new File(filepath);
+		if (!folder.exists()) {
+			System.out.println("CHANNELTHREAD: " + "Don't have any folder corresponding to the given file ID.");
+		} else {
+			File[] contents = folder.listFiles();
+			if (contents != null) {
+				for (File f : contents) {
+					f.delete();
+				}
+			}
+			folder.delete();
+		}
 	}
 	
 	public void removed(){

@@ -1,6 +1,5 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.io.File;
 import java.nio.file.attribute.*;
 import java.nio.file.Files;
 import java.security.*;
@@ -65,7 +64,7 @@ public class MyFile {
 				chunk[counter] = this.content[i];
 				counter++;
 			}
-			c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 			this.chunks.add(c);
 
 		} else {
@@ -86,7 +85,7 @@ public class MyFile {
 						counter++;
 					} else {
 
-						c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+						c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 						this.chunks.add(c);
 						counter = 0;
 						chunk[counter] = this.content[i];
@@ -99,17 +98,34 @@ public class MyFile {
 					}
 				}
 			}
-			c = new Chunk(this.fileID, chunkNo, this.replication, chunk.length, chunk);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, chunk.length, chunk);
 			this.chunks.add(c);
 		}
 		if (remainder == 0) {
 			chunkNo++;
-			c = new Chunk(this.fileID, chunkNo, this.replication, 0, new byte[0]);
+			c = new Chunk(this.fileID, chunkNo-1, this.replication, 0, new byte[0]);
 			this.chunks.add(c);
 		}
 
+		/*
+		File folder = new File("splitted_by_peer/"+this.fileID);
+		if (!folder.exists()) {
+			folder.mkdirs();
+		}
+		for(int i=0; i<this.chunks.size(); i++){
+			try{
+				File file = new File(folder.getPath()+"/"+i);
+				FileOutputStream fos = new FileOutputStream(file);
+				file.createNewFile();
+				fos.write(chunks.get(i).data);
+				fos.close();
+			} catch (Exception e) {
+				System.out.println("fml");
+			}
+		}*/
+		
 	}
-
+/*
 	public static byte[] makeFileID(File f) {
 		byte[] fileID = null;
 		MessageDigest md;
@@ -137,5 +153,5 @@ public class MyFile {
 
 		return fileID;
 	}
-
+*/
 }

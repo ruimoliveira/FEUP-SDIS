@@ -7,7 +7,7 @@ public interface RMIservice extends Remote {
 	void restore(String file_path) throws RemoteException;
 
 	/* TODO */
-	void delete() throws RemoteException;
+	void delete(String file_path) throws RemoteException;
 
 	/* TODO */
 	void reclaim() throws RemoteException;
